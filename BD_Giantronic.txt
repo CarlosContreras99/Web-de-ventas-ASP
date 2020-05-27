@@ -1,0 +1,533 @@
+create database GIANTRONIC
+go
+
+use GIANTRONIC
+go
+
+
+create table TB_ESTADOS(
+codest char(2) primary key,
+estdesc varchar(20)
+)
+go
+
+
+
+
+create table TB_PERFIL(
+codperf char(3) primary key,
+descperf varchar(50)
+)
+go
+
+create table TB_USUARIOS(
+dni varchar(25) primary key,
+nombre varchar(25) not null,
+apellidop varchar(25),
+apellidom varchar(25),
+correo varchar(100),
+telefono varchar(10),
+direccion varchar(100) not null,
+nick varchar(25) unique not null,
+contraseña varchar(25) not null,
+perfil char(3)  foreign key references TB_PERFIL(codperf)
+)
+go
+
+create table TB_PEDIDOS(
+pedcod int primary key,
+dni varchar(25) foreign key references TB_USUARIOS(dni),
+monto numeric(15,2),
+fecha datetime,
+codest char(2) foreign key references TB_ESTADOS(codest)
+)
+go
+
+
+
+create table TB_PROVEEDOR(
+ruc char(11) primary key,
+nomprov varchar(50),
+direccion varchar(100),
+telefono varchar(15),
+contacto varchar(100),
+correo varchar(100),
+productos varchar(100)
+)
+go
+
+
+create table TB_TIPO_TELEVISION(
+codtip varchar(6) primary key,
+destip varchar(100),
+durabilidad varchar(10)
+)
+go
+
+
+create table TB_CATEGORIA_TELEVISION(
+codcat varchar(3) primary key,
+descat varchar(100),
+detalle varchar(200)
+)
+go
+
+create table TB_TELEVISION(
+modelo varchar(15) primary key,
+idprov char(11) foreign key references TB_PROVEEDOR(ruc),
+codtip varchar(6) foreign key references TB_TIPO_TELEVISION(codtip),
+codcat varchar(3) foreign key references TB_CATEGORIA_TELEVISION(codcat),
+resolucion varchar(10),
+tamaño char(3),
+caracteristica varchar(200),
+precio numeric(15,2),
+stock int,
+img varchar(200)
+unique (modelo)
+)
+go
+
+create table TB_PEDIDOS_DETALLE(
+pedcod int,
+item int,
+ruc char(11) foreign key references TB_PROVEEDOR(ruc),
+modelo varchar(15) foreign key references TB_TELEVISION(modelo),
+precio numeric,
+cantidad int,
+subtotal numeric(15,2),
+fecha datetime,
+codest char(2) foreign key references TB_ESTADOS(codest)
+primary key (pedcod,item)
+)
+go
+-----------------------------------------------------------------------
+-----------------------------------------------------------------------
+-----------------------------------------------------------------------
+
+insert into TB_ESTADOS values ('A','ATENDIDO')
+insert into TB_ESTADOS values ('P','PENDIENTE')
+go
+
+insert into TB_CATEGORIA_TELEVISION values ('EST','ESTANDAR','TELEVISIONES COMODAS Y CON BAJA TECNOLOGIA')
+insert into TB_CATEGORIA_TELEVISION values ('3D','3D','TELEVISIONES CON OTRA MIRA HACIA EL FUTURO')
+insert into TB_CATEGORIA_TELEVISION values ('STV','SMART TV','TELEVISION QUE UNE A TODOS')
+insert into TB_CATEGORIA_TELEVISION values ('S3D','SMART TV + 3D','NOS CONECTA COMO EN EL CINE')
+insert into TB_CATEGORIA_TELEVISION values ('UHD','ULTRA HD','CINE EXCLUSIVO')
+go
+
+
+insert into TB_TIPO_TELEVISION values ('LCD','Pantalla de cristal liquido','MEDIANA')
+insert into TB_TIPO_TELEVISION values ('LED','Diodo emisor de luz','ALTA')
+insert into TB_TIPO_TELEVISION values ('PLASMA','Panel formado por micro capsulas con gas xenon y neon','CORTA')
+go
+
+
+insert into TB_PROVEEDOR values ('20300263578','SAMSUNG','AV.AVENIDA RICARDO RIVERA NAVARRETE #501','7114800','Jimena Chirinos','Jchirinos@hotmail.com','VENTA MINORISTA OTROS EN SERES DOMESTICOS')
+insert into TB_PROVEEDOR values ('20372706288','SONY','CAL. CALLE AMADOR MERINO REYNA #285','6158000','Carlos Huaraca','Chuaraca@hotmail.com','VENTA MINORISTA OTROS EN SERES DOMESTICOS')
+insert into TB_PROVEEDOR values ('20100165849','PANASONIC','AV. AVENIDA REPUBLICA DE COLOMBIA #791','6140001','Julio Soto','Jsoto@hotmail.com','VENTA MINORISTA OTROS EN SERES DOMESTICOS')
+insert into TB_PROVEEDOR values ('20375755344','LG','AV. AVENIDA ALFREDO MENDIOLA #1600','4229190','Jorge Tulio','Jtulio@hotmail.com','VENTA MINORISTA OTROS EN SERES DOMESTICOS')
+go
+
+
+insert into TB_PERFIL values ('ADM','ADMINISTRADOR')
+insert into TB_PERFIL values ('EMP','EMPLEADO')
+insert into TB_PERFIL values ('USU','USUARIO')
+go
+
+insert into TB_USUARIOS values ('09575032','DAVID','TAYPE','BLANCA','taype_cancer81@hotmail.com','4550555','jr.reynaldo de vivanco 345','administrador','administrador','ADM')
+insert into TB_USUARIOS values ('09377032','JHONATHAN','PICON','SAYAS','ddoblej@hotmail.com','4550555','jr.velasco alvarado 485','empleado','empleado','EMP')
+insert into TB_USUARIOS values ('09576032','ALEXANDER','RAMIREZ','PALOMINO','sebastian_virgo10@hotmail.com','4550555','jr.carranza buen dia 222','usuario','usuario','USU')
+go
+
+insert into TB_TELEVISION values ('32LB561B','20375755344','LCD','EST','Full HD','32"','Ultra Slim',1000.00,10,'~/images/1lg.jpg')
+insert into TB_TELEVISION values ('PN43H4000','20300263578','PLASMA','3D','Full HD','43"','Ultra Slim',1800.00,10,'~/images/1sa.jpg')
+insert into TB_TELEVISION values ('TC-L42ET60L','20100165849','LED','STV','Full HD','42"','Ultra Slim',1500.00,10,'~/images/1pa.jpg')
+go
+-----------------------------------------------------------------------
+-----------------procedimiento consulta--------------------------------
+-----------------------------------------------------------------------
+
+
+
+create proc sp_mantenimientopedido
+@pedcod  int,
+@dni  varchar(25),
+@monto  numeric(15,2),
+@fecha  datetime,
+@codest char(2),
+@accion char(1)
+as
+
+if @accion = 'A' -- actualizar
+	begin
+		update TB_PEDIDOS
+		set  dni=@dni,monto=@monto,fecha=@fecha,codest=@codest 
+		where pedcod=@pedcod
+	end
+
+if @accion = 'E' -- eliminar
+	begin
+		delete from TB_PEDIDOS where pedcod=@pedcod
+	end
+go
+
+create proc sp_mantenimientotelevision
+@modelo varchar(15),
+@idprov char(11),
+@codtip varchar(6),
+@codcat varchar(3),
+@resolucion varchar(10),
+@tamaño char(3),
+@caracteristica varchar(200),
+@precio numeric(15,2),
+@stock int,
+@img varchar(200),
+@accion char(1)
+as
+if @accion = 'R' -- registrar
+	begin
+		insert into TB_TELEVISION values (@modelo,@idprov,@codtip,@codcat,@resolucion,@tamaño,@caracteristica,@precio,@stock,@img)
+	end
+
+if @accion = 'A' -- actualizar
+	begin
+		update TB_TELEVISION
+		set  idprov=@idprov,codtip=@codtip,codcat=@codcat,resolucion=@resolucion,tamaño=@tamaño,caracteristica=@caracteristica,precio=@precio,stock=@stock,img=@img
+		where modelo=@modelo
+	end
+
+if @accion = 'E' -- eliminar
+	begin
+		delete from TB_TELEVISION where modelo=@modelo
+	end
+go
+
+
+create proc sp_mantenimientocategoria
+@codcat varchar(3),
+@descat varchar(100),
+@detalle varchar(200),
+@accion char(1)
+as
+if @accion = 'R' -- registrar
+	begin
+		insert into TB_CATEGORIA_TELEVISION values (@codcat,@descat,@detalle)
+	end
+
+if @accion = 'A' -- actualizar
+	begin
+		update TB_CATEGORIA_TELEVISION
+		set descat=@descat,detalle=@detalle
+		where codcat=@codcat
+	end
+
+if @accion = 'E' -- eliminar
+	begin
+		delete from TB_CATEGORIA_TELEVISION where codcat=@codcat
+	end
+go
+
+
+create proc sp_mantenimientotecnologia
+@codtip varchar(6),
+@destip varchar(100),
+@dur varchar(10),
+@accion char(1)
+as
+if @accion = 'R' -- registrar
+	begin
+		insert into TB_TIPO_TELEVISION values (@codtip,@destip,@dur)
+	end
+
+if @accion = 'A' -- actualizar
+	begin
+		update TB_TIPO_TELEVISION
+		set destip=@destip,durabilidad=@dur
+		where codtip=@codtip
+	end
+
+if @accion = 'E' -- eliminar
+	begin
+		delete from TB_TIPO_TELEVISION where codtip=@codtip
+	end
+go
+
+
+create proc sp_obtenerusuario
+@usu varchar(25),
+@pass varchar(25)
+as
+select * from TB_USUARIOS where nick =rtrim(ltrim(@usu)) and contraseña=rtrim(ltrim(@pass))
+go
+-----------------------------------------------------------------------
+create proc sp_mantenimientoproveedor
+@ruc varchar(20),
+@nom varchar(50),
+@dir varchar(100),
+@tel varchar(15),
+@con varchar(100),
+@cor varchar(100),
+@pro varchar(100),
+@accion char(1)
+as
+if @accion = 'R' -- registrar
+	begin
+		insert into TB_PROVEEDOR values (@ruc,@nom,@dir,@tel,@con,@cor,@pro)
+	end
+
+if @accion = 'A' -- actualizar
+	begin
+		update TB_PROVEEDOR
+		set nomprov=@nom,direccion=@dir,telefono=@tel,contacto=@con,correo=@cor,productos=@pro
+		where ruc=@ruc
+	end
+
+if @accion = 'E' -- eliminar
+	begin
+		delete from TB_PROVEEDOR where ruc=@ruc
+	end
+go
+---------------------------------
+create proc sp_mantenimientousuario
+@dni varchar(25),
+@nom varchar(25),
+@apep varchar(25),
+@apem varchar(25),
+@corr varchar(100),
+@tel varchar(10),
+@dir varchar(100),
+@nic varchar(25),
+@con varchar(25),
+@perfil char(3),
+@accion char(1)
+as
+
+if not exists (Select * from TB_USUARIOS where dni = @dni)
+	raiserror ('El Usuario No Existe!',16,217)
+
+if @accion = 'R' -- registrar
+	begin
+		if (isnull(@perfil,'') = '')
+			begin
+				insert into TB_USUARIOS values (@dni,@nom,@apep,@apem,@corr,@tel,@dir,@nic,@con,'USU')
+			end
+		else
+			begin
+				insert into TB_USUARIOS values (@dni,@nom,@apep,@apem,@corr,@tel,@dir,@nic,@con,@perfil)
+			end
+	end
+
+if @accion = 'A' -- actualizar
+	begin
+		update TB_USUARIOS
+		set nombre=@nom,apellidop=@apep,apellidom=@apem,correo=@corr,telefono=@tel,direccion=@dir,nick=@nic,contraseña=@con,perfil=@perfil
+		where dni=@dni
+	end
+
+if @accion = 'E' -- eliminar
+	begin
+		delete from TB_USUARIOS where dni=@dni
+	end
+go
+
+
+---------------------------------
+create proc sp_listatelevision
+as
+select modelo Codigo,nomprov Proveedor,destip Tecnologia,descat Categoria,resolucion Resolucion,tamaño Pulgadas,caracteristica Caracteristicas,precio Precio,stock Stock,img Img
+from TB_TELEVISION a inner join TB_PROVEEDOR b on a.idprov = b.ruc 
+	inner join TB_CATEGORIA_TELEVISION ct on ct.codcat=a.codcat
+	inner join TB_TIPO_TELEVISION t on t.codtip=a.codtip
+go
+
+
+---------------------------------
+create proc sp_obtienedatosusuario
+@dni varchar(25)
+as
+select * from TB_USUARIOS where dni=@dni
+go
+---------------------------------
+create proc sp_listaperfiles
+as
+select * from TB_PERFIL
+go
+---------------------------------
+create proc sp_listausuarios
+as
+select dni,nombre,apellidop,apellidom,correo,telefono,direccion,nick,contraseña,descperf perfil
+from TB_USUARIOS u, TB_PERFIL p where u.perfil=p.codperf
+go
+---------------------------------
+create proc sp_listaproveedores
+as
+select * from TB_PROVEEDOR
+go
+---------------------------------
+create proc sp_listatecnologia
+as
+select * from TB_TIPO_TELEVISION
+go
+---------------------------------
+create proc sp_listacategoria
+as
+select * from TB_CATEGORIA_TELEVISION
+go
+---------------------------------
+create proc sp_listaestados
+as
+select * from TB_ESTADOS
+go
+---------------------------------
+create proc sp_listapedido
+as
+select [pedcod]
+      ,[dni]
+      ,[monto]
+      ,[fecha]
+      ,e.[estdesc] as codest
+	   from TB_PEDIDOS p inner join TB_ESTADOS e on p.codest=e.codest
+go
+---------------------------------
+create proc sp_listapedidoscliente
+@dni varchar(25),
+@idped int,
+@estado char(1)
+as
+select pedcod,u.nombre + ' ' + u.apellidop +' ' + u.apellidom as cliente,monto,fecha,e.estdesc from TB_PEDIDOS p, TB_USUARIOS u, TB_ESTADOS E
+WHERE P.dni=U.dni AND P.codest=e.codest and p.dni=@dni and (pedcod=@idped or ISNULL(@idped,'')='') and
+(e.codest = rtrim(ltrim(@estado)) or isnull(rtrim(ltrim(@estado)),'')='')
+go
+
+---------------------------------
+create proc sp_listapedidosdet
+@idped int
+as
+select pedcod,item,p.nomprov,m.modelo,pd.precio,cantidad,subtotal,convert(varchar(10),fecha,103) fecha,estdesc,m.img 
+from TB_PEDIDOS_DETALLE pd, TB_PROVEEDOR p, TB_TELEVISION m, TB_ESTADOS e 
+where pd.ruc=p.ruc and pd.modelo=m.modelo and pd.codest=e.codest and
+pedcod=@idped
+go
+
+---------------------------------
+create proc sp_listapedidos
+as
+select pedcod,u.nombre + ' ' + u.apellidop+ ' ' + u.apellidom as cliente,monto,fecha,e.estdesc from TB_PEDIDOS p, TB_USUARIOS u, TB_ESTADOS E
+WHERE P.dni=U.dni AND P.codest=e.codest
+go
+
+---------------------------------
+create proc sp_listapedidosxestado
+@idped int,
+@estado varchar(15)
+as
+select pedcod,u.nombre + ' ' + u.apellidop+ ' ' + u.apellidom as cliente,monto,fecha,e.estdesc from TB_PEDIDOS p, TB_USUARIOS u, TB_ESTADOS E
+WHERE P.dni=U.dni AND P.codest=e.codest and (pedcod=@idped or ISNULL(@idped,'')='') and
+(e.codest = rtrim(ltrim(@estado)) or isnull(rtrim(ltrim(@estado)),'')='')
+go
+---------------------------------
+create proc [dbo].[sp_listatelevisionxmarca]
+@modelo varchar(15),
+@idprov varchar(11)
+as
+select modelo as Codigo,idprov as Proveedor,
+      codtip as Tecnologia
+      ,codcat as Categoria
+      ,resolucion as Resolucion
+      ,tamaño as Pulgadas
+      ,caracteristica as Caracteristicas
+      ,precio as Precio
+      ,stock as Stock
+      ,img as img from TB_TELEVISION 
+WHERE (modelo=@modelo or ISNULL(@modelo,'')='') and
+(idprov = rtrim(ltrim(@idprov)) or isnull(rtrim(ltrim(@idprov)),'')='')
+go
+---------------------------------
+create proc sp_listaTelevisionxTipopantalla
+@modelo varchar(15),
+@codtip varchar(6)
+as
+select modelo as Codigo,idprov as Proveedor,
+      codtip as Tecnologia
+      ,codcat as Categoria
+      ,resolucion as Resolucion
+      ,tamaño as Pulgadas
+      ,caracteristica as Caracteristicas
+      ,precio as Precio
+      ,stock as Stock
+      ,img as img from TB_TELEVISION 
+WHERE (modelo=@modelo or ISNULL(@modelo,'')='') and
+(codtip  = rtrim(ltrim(@codtip)) or isnull(rtrim(ltrim(@codtip)),'')='')
+go
+---------------------------------
+create proc sp_listaTelevisionxcategoria
+@modelo varchar(15),
+@codcat varchar(3)
+as
+select modelo as Codigo,idprov as Proveedor,
+      codtip as Tecnologia
+      ,codcat as Categoria
+      ,resolucion as Resolucion
+      ,tamaño as Pulgadas
+      ,caracteristica as Caracteristicas
+      ,precio as Precio
+      ,stock as Stock
+      ,img as img from TB_TELEVISION 
+WHERE (modelo=@modelo or ISNULL(@modelo,'')='') and
+(codcat  = rtrim(ltrim(@codcat)) or isnull(rtrim(ltrim(@codcat)),'')='')
+go
+---------------------------------
+
+create proc sp_registrarpedidocab
+@pedcod int,
+@dni varchar(9),
+@monto numeric
+as
+
+-- variable....
+declare @fecha datetime
+set @fecha = GETDATE()
+
+insert into TB_PEDIDOS values(@pedcod,@dni,@monto,@fecha,'P')
+
+go
+
+
+---------------------------------
+
+create proc sp_registrarpedidodet    
+@pedcod int,    
+@nomprov varchar(50),    
+@modelo varchar(15),    
+@precio numeric,    
+@cantidad int,    
+@subtotal numeric    
+as    
+    
+-- Variables    
+declare @fecha datetime 
+declare @item int
+declare @ruc char(11) 
+  
+-- Asignacion de valores    
+set @fecha = GETDATE()    
+select @item=isnull(max(item),0) from TB_PEDIDOS_DETALLE where pedcod=@pedcod    
+select @modelo=modelo from TB_TELEVISION where modelo=rtrim(ltrim(@modelo))   
+select @ruc = ruc from TB_PROVEEDOR where nomprov=rtrim(ltrim(@nomprov))   
+
+update TB_TELEVISION 
+set stock = stock - @cantidad    
+where modelo=rtrim(ltrim(@modelo))  
+ 
+-- Correlativo para el item del pedido    
+if @item = 0    
+	begin
+		set @item = 1    
+	end
+else
+	begin    
+		set @item = @item+1    
+    end
+
+insert into TB_PEDIDOS_DETALLE values (@pedcod,@item,@ruc,@modelo,@precio,@cantidad,@subtotal,@fecha,'P')      
+go
